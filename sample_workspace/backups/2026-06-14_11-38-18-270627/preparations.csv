@@ -1,0 +1,2 @@
+﻿id,name,category,yield_quantity,yield_unit,total_cost,cost_per_yield_unit,active,notes
+prep_001,House Sauce,Sauces,500,g,10,0.02,true,

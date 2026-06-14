@@ -1,0 +1,7 @@
+﻿key,value
+data_version,1
+currency,AUD
+decimal_separator,.
+default_food_cost_percent,30
+backup_on_startup,true
+commercial_rounding,none

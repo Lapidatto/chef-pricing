@@ -1,0 +1,3 @@
+﻿id,preparation_id,component_type,component_id,quantity,unit,loss_percent,notes
+pc_001,prep_001,ingredient,ing_002,80,g,0,
+pc_002,prep_001,ingredient,ing_003,120,g,0,

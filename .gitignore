@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.venv-windows/
+build/
+dist/
+src/*.egg-info/
+*.spec.bak
+.idea/
+.vscode/
+.DS_Store
+chef_pricing_config.json

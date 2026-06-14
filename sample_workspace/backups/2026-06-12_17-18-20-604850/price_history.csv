@@ -1,0 +1,4 @@
+﻿id,ingredient_id,purchase_unit,purchase_quantity,purchase_price,supplier,price_date,notes
+ph_001,ing_001,kg,1,12,Central Market,2026-06-12,Updated by the application
+ph_002,ing_002,kg,1,80,Supplier A,2026-06-12,Updated by the application
+ph_003,ing_003,kg,1,30,Supplier B,2026-06-12,Updated by the application

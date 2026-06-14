@@ -1,0 +1,4 @@
+﻿id,name,category,purchase_unit,purchase_quantity,purchase_price,base_unit,base_quantity,cost_per_base_unit,waste_percent,supplier,last_price_date,active,notes
+ing_001,Tomato,Produce,kg,1,12,g,1000,0.012,5,Central Market,2026-06-12,true,
+ing_002,Parmesan,Dairy,kg,1,80,g,1000,0.08,0,Supplier A,2026-06-12,true,
+ing_003,Mayonnaise,Sauces,kg,1,30,g,1000,0.03,0,Supplier B,2026-06-12,true,

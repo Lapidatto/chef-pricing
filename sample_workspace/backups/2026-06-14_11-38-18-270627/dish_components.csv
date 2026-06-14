@@ -1,0 +1,3 @@
+﻿id,dish_id,component_type,component_id,quantity,unit,loss_percent,notes
+dc_001,dish_001,ingredient,ing_001,120,g,0,
+dc_002,dish_001,preparation,prep_001,40,g,0,

@@ -1,0 +1,6 @@
+﻿id,name,type,to_base_factor,base_unit,active
+unit_kg,kg,mass,1000,g,true
+unit_g,g,mass,1,g,true
+unit_l,l,volume,1000,ml,true
+unit_ml,ml,volume,1,ml,true
+unit_un,un,count,1,un,true
