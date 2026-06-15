@@ -4,7 +4,8 @@ setlocal EnableExtensions
 title Chef Pricing - Build Windows EXE
 
 rem ==================================================
-rem Configuracao principal
+rem Chef Pricing - Build Windows EXE
+rem Este arquivo deve ficar em: scripts\build_windows_installer.bat
 rem ==================================================
 
 set "SCRIPT_DIR=%~dp0"
@@ -19,12 +20,14 @@ if not exist "%ROOT%\pyproject.toml" (
 
 set "LOG_DIR=%ROOT%\logs"
 set "LOG=%LOG_DIR%\build_windows_exe.log"
+set "PIP_LOG=%LOG_DIR%\pip_install_verbose.log"
 set "OUT=%TEMP%\chef_pricing_build_step_output.txt"
 
 set "VENV_DIR=%ROOT%\.venv-windows"
 set "VENV_PYTHON=%VENV_DIR%\Scripts\python.exe"
 
 set "LAST_STEP=Inicializacao"
+set "PYTHON_EXE="
 
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
 
@@ -34,6 +37,7 @@ if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
 >> "%LOG%" echo Script dir: %SCRIPT_DIR%
 >> "%LOG%" echo Root dir: %ROOT%
 >> "%LOG%" echo Log file: %LOG%
+>> "%LOG%" echo Pip log file: %PIP_LOG%
 >> "%LOG%" echo ==================================================
 
 echo.
@@ -43,8 +47,11 @@ echo ==================================================
 echo Root:
 echo "%ROOT%"
 echo.
-echo Log:
+echo Log principal:
 echo "%LOG%"
+echo.
+echo Log detalhado do pip:
+echo "%PIP_LOG%"
 echo.
 
 cd /d "%ROOT%" || (
@@ -58,7 +65,7 @@ if not exist "%ROOT%\pyproject.toml" (
   echo ERROR: pyproject.toml nao encontrado.
   echo.
   echo O .bat precisa estar dentro da pasta scripts do projeto ou na raiz do projeto.
-  echo Pasta atual detectada:
+  echo Pasta detectada:
   echo "%ROOT%"
   echo.
   pause
@@ -66,7 +73,7 @@ if not exist "%ROOT%\pyproject.toml" (
 )
 
 rem ==================================================
-rem Limpa ambiente virtual criado no lugar errado
+rem Remove ambiente virtual criado no lugar errado
 rem ==================================================
 
 if exist "%ROOT%\scripts\.venv-windows" (
@@ -75,61 +82,64 @@ if exist "%ROOT%\scripts\.venv-windows" (
   echo "%ROOT%\scripts\.venv-windows"
   echo Removendo...
   rmdir /s /q "%ROOT%\scripts\.venv-windows" >nul 2>&1
+
+  if exist "%ROOT%\scripts\.venv-windows" (
+    echo ERROR: Nao foi possivel remover:
+    echo "%ROOT%\scripts\.venv-windows"
+    echo.
+    echo Feche terminais ou programas usando essa pasta e rode novamente.
+    goto :fail
+  )
 )
 
 rem ==================================================
-rem Detecta Python
+rem Forca Python 3.12 x64
 rem ==================================================
 
-set "PYTHON_EXE="
-
-rem Prioridade 1: caminho conhecido da sua maquina
-if exist "C:\Users\giull\AppData\Local\Programs\Python\Python312\python.exe" (
-  set "PYTHON_EXE=C:\Users\giull\AppData\Local\Programs\Python\Python312\python.exe"
-)
-
-rem Prioridade 2: Python Launcher tentando Python 3.14 x64
-if not defined PYTHON_EXE (
-  for /f "delims=" %%P in ('py -3.14-64 -c "import sys; print(sys.executable)" 2^>nul') do set "PYTHON_EXE=%%P"
-)
-
-rem Prioridade 3: Python Launcher tentando Python 3.12 x64
-if not defined PYTHON_EXE (
-  for /f "delims=" %%P in ('py -3.12-64 -c "import sys; print(sys.executable)" 2^>nul') do set "PYTHON_EXE=%%P"
-)
-
-rem Prioridade 4: comando python do PATH
-if not defined PYTHON_EXE (
-  for /f "delims=" %%P in ('python -c "import sys; print(sys.executable)" 2^>nul') do set "PYTHON_EXE=%%P"
-)
+for /f "delims=" %%P in ('py -3.12-64 -c "import sys; print(sys.executable)" 2^>nul') do set "PYTHON_EXE=%%P"
 
 if not defined PYTHON_EXE (
-  echo ERROR: Nenhum Python valido foi encontrado.
+  echo ERROR: Python 3.12 x64 nao foi encontrado pelo Python Launcher.
   echo.
-  echo Instale Python 3.12 ou superior, 64 bits.
+  echo Rode este comando para confirmar:
+  echo py -3.12-64 --version
+  echo.
+  echo Se falhar, reinstale o Python 3.12 x64.
   echo.
   pause
   exit /b 1
 )
 
-call :run "1/8 Validando Python escolhido" "%PYTHON_EXE%" -c "import sys, struct; print('Executable:', sys.executable); print('Version:', sys.version); print('Architecture:', struct.calcsize('P') * 8, 'bits'); raise SystemExit(0 if sys.version_info >= (3, 12) and struct.calcsize('P') * 8 == 64 else 1)"
+call :run "1/8 Validando Python 3.12 x64" "%PYTHON_EXE%" -c "import sys, struct; print('Executable:', sys.executable); print('Version:', sys.version); print('Architecture:', struct.calcsize('P') * 8, 'bits'); raise SystemExit(0 if sys.version_info[:2] == (3, 12) and struct.calcsize('P') * 8 == 64 else 1)"
 if errorlevel 1 (
   echo.
-  echo ERROR: O Python detectado nao e valido.
-  echo Precisa ser Python 3.12 ou superior, 64 bits.
+  echo ERROR: O Python detectado nao e Python 3.12 x64.
   goto :fail
 )
+
+>> "%LOG%" echo Python 3.12 executable: %PYTHON_EXE%
 
 rem ==================================================
 rem Valida ou recria ambiente virtual
 rem ==================================================
 
 if exist "%VENV_PYTHON%" (
-  call :run "2/8 Validando ambiente virtual existente" "%VENV_PYTHON%" -c "import sys, struct; print('Executable:', sys.executable); print('Version:', sys.version); print('Architecture:', struct.calcsize('P') * 8, 'bits'); raise SystemExit(0 if sys.version_info >= (3, 12) and struct.calcsize('P') * 8 == 64 else 1)"
+  call :run "2/8 Validando ambiente virtual existente" "%VENV_PYTHON%" -c "import sys, struct; print('Executable:', sys.executable); print('Version:', sys.version); print('Architecture:', struct.calcsize('P') * 8, 'bits'); raise SystemExit(0 if sys.version_info[:2] == (3, 12) and struct.calcsize('P') * 8 == 64 else 1)"
+
   if errorlevel 1 (
     echo.
-    echo Ambiente virtual invalido. Removendo para recriar...
+    echo Ambiente virtual existente nao esta usando Python 3.12 x64.
+    echo Removendo para recriar corretamente...
+    echo.
     rmdir /s /q "%VENV_DIR%" >nul 2>&1
+
+    if exist "%VENV_DIR%" (
+      echo ERROR: Nao foi possivel remover:
+      echo "%VENV_DIR%"
+      echo.
+      echo Feche terminais ou programas usando essa pasta e rode novamente.
+      goto :fail
+    )
   )
 ) else (
   echo.
@@ -139,7 +149,7 @@ if exist "%VENV_PYTHON%" (
 )
 
 if not exist "%VENV_PYTHON%" (
-  call :run "3/8 Criando ambiente virtual .venv-windows" "%PYTHON_EXE%" -m venv "%VENV_DIR%"
+  call :run "3/8 Criando ambiente virtual .venv-windows com Python 3.12" "%PYTHON_EXE%" -m venv "%VENV_DIR%"
   if errorlevel 1 goto :fail
 ) else (
   call :info "3/8 Ambiente virtual pronto: %VENV_DIR%"
@@ -148,8 +158,22 @@ if not exist "%VENV_PYTHON%" (
 call :run "4/8 Atualizando pip, setuptools e wheel" "%VENV_PYTHON%" -m pip install --upgrade pip setuptools wheel
 if errorlevel 1 goto :fail
 
-call :run "5/8 Instalando dependencias do projeto" "%VENV_PYTHON%" -m pip install -e ".[dev,build]" --verbose
-if errorlevel 1 goto :fail
+rem ==================================================
+rem Instala dependencias
+rem ==================================================
+
+if exist "%PIP_LOG%" del "%PIP_LOG%" >nul 2>&1
+
+call :run "5/8 Instalando dependencias do projeto" "%VENV_PYTHON%" -m pip install -e ".[dev,build]" --verbose --log "%PIP_LOG%"
+if errorlevel 1 (
+  echo.
+  echo ERROR: Falha na instalacao das dependencias.
+  echo.
+  echo Veja o log detalhado do pip em:
+  echo "%PIP_LOG%"
+  echo.
+  goto :fail
+)
 
 rem ==================================================
 rem Verifica Inno Setup
@@ -168,7 +192,7 @@ if not defined INNO_SETUP_COMPILER (
     echo ERROR: winget nao encontrado.
     echo.
     echo Instale o Inno Setup 6 manualmente e rode este .bat de novo.
-    echo Depois de instalado, o arquivo esperado normalmente fica em:
+    echo Caminho esperado normalmente:
     echo "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
     goto :fail
   )
@@ -214,8 +238,11 @@ if exist "%ROOT%\dist\installer" (
   echo.
 )
 
-echo Log completo:
+echo Log principal:
 echo "%LOG%"
+echo.
+echo Log detalhado do pip:
+echo "%PIP_LOG%"
 echo.
 pause
 exit /b 0
@@ -228,11 +255,8 @@ rem ==================================================
 :detect_inno
 set "INNO_SETUP_COMPILER="
 
-where ISCC.exe > "%TEMP%\chef_pricing_iscc_path.txt" 2>nul
-if not errorlevel 1 (
-  for /f "delims=" %%I in (%TEMP%\chef_pricing_iscc_path.txt) do (
-    if not defined INNO_SETUP_COMPILER set "INNO_SETUP_COMPILER=%%I"
-  )
+for /f "delims=" %%I in ('where ISCC.exe 2^>nul') do (
+  if not defined INNO_SETUP_COMPILER set "INNO_SETUP_COMPILER=%%I"
 )
 
 if not defined INNO_SETUP_COMPILER (
@@ -253,7 +277,6 @@ exit /b 0
 :run
 set "LAST_STEP=%~1"
 shift /1
-set "RUN_COMMAND=%*"
 
 echo.
 echo ==================================================
@@ -263,12 +286,14 @@ echo ==================================================
 >> "%LOG%" echo.
 >> "%LOG%" echo ==================================================
 >> "%LOG%" echo %LAST_STEP%
->> "%LOG%" echo Command: %RUN_COMMAND%
+>> "%LOG%" echo Command: %1 %2 %3 %4 %5 %6 %7 %8 %9
 >> "%LOG%" echo ==================================================
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$cmd=$env:RUN_COMMAND; $log=$env:LOG; cmd.exe /d /s /c $cmd 2>&1 | Tee-Object -FilePath $log -Append; exit $LASTEXITCODE"
-
+%1 %2 %3 %4 %5 %6 %7 %8 %9 > "%OUT%" 2>&1
 set "ERR=%ERRORLEVEL%"
+
+type "%OUT%"
+type "%OUT%" >> "%LOG%"
 
 if not "%ERR%"=="0" (
   echo.
@@ -283,6 +308,7 @@ if not "%ERR%"=="0" (
 )
 
 exit /b 0
+
 
 :info
 echo.
@@ -300,8 +326,11 @@ echo ==================================================
 echo Etapa:
 echo %LAST_STEP%
 echo.
-echo Veja o log completo em:
+echo Log principal:
 echo "%LOG%"
+echo.
+echo Log detalhado do pip:
+echo "%PIP_LOG%"
 echo.
 echo O terminal ficara aberto para voce copiar o erro.
 echo ==================================================
