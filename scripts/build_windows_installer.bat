@@ -84,8 +84,8 @@ rem ==================================================
 set "PYTHON_EXE="
 
 rem Prioridade 1: caminho conhecido da sua maquina
-if exist "C:\Users\giull\AppData\Local\Programs\Python\Python314\python.exe" (
-  set "PYTHON_EXE=C:\Users\giull\AppData\Local\Programs\Python\Python314\python.exe"
+if exist "C:\Users\giull\AppData\Local\Programs\Python\Python312\python.exe" (
+  set "PYTHON_EXE=C:\Users\giull\AppData\Local\Programs\Python\Python312\python.exe"
 )
 
 rem Prioridade 2: Python Launcher tentando Python 3.14 x64
@@ -148,7 +148,7 @@ if not exist "%VENV_PYTHON%" (
 call :run "4/8 Atualizando pip, setuptools e wheel" "%VENV_PYTHON%" -m pip install --upgrade pip setuptools wheel
 if errorlevel 1 goto :fail
 
-call :run "5/8 Instalando dependencias do projeto" "%VENV_PYTHON%" -m pip install -e ".[dev,build]"
+call :run "5/8 Instalando dependencias do projeto" "%VENV_PYTHON%" -m pip install -e ".[dev,build]" --verbose
 if errorlevel 1 goto :fail
 
 rem ==================================================
@@ -252,6 +252,8 @@ exit /b 0
 
 :run
 set "LAST_STEP=%~1"
+shift /1
+set "RUN_COMMAND=%*"
 
 echo.
 echo ==================================================
@@ -261,14 +263,12 @@ echo ==================================================
 >> "%LOG%" echo.
 >> "%LOG%" echo ==================================================
 >> "%LOG%" echo %LAST_STEP%
->> "%LOG%" echo Command: %2 %3 %4 %5 %6 %7 %8 %9
+>> "%LOG%" echo Command: %RUN_COMMAND%
 >> "%LOG%" echo ==================================================
 
-%2 %3 %4 %5 %6 %7 %8 %9 > "%OUT%" 2>&1
-set "ERR=%ERRORLEVEL%"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$cmd=$env:RUN_COMMAND; $log=$env:LOG; cmd.exe /d /s /c $cmd 2>&1 | Tee-Object -FilePath $log -Append; exit $LASTEXITCODE"
 
-type "%OUT%"
-type "%OUT%" >> "%LOG%"
+set "ERR=%ERRORLEVEL%"
 
 if not "%ERR%"=="0" (
   echo.
@@ -283,7 +283,6 @@ if not "%ERR%"=="0" (
 )
 
 exit /b 0
-
 
 :info
 echo.
