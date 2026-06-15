@@ -11,3 +11,4 @@ src/*.egg-info/
 .vscode/
 .DS_Store
 chef_pricing_config.json
+logs/
